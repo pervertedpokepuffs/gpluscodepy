@@ -6,17 +6,16 @@ import time
 import openlocationcode.openlocationcode as olc
 
 class Converter:
-    def __init__(self, filename):
-        self.filename = filename
-        self.ratelimit = 1
-        with open(self.filename, 'r+', encoding='utf-8') as file:
-            try:
-                self.cities = json.load(file)
-            except json.JSONDecodeError:
-                self.cities = []
+    def __init__(self, api_key, index=[]):
+        self.cities = index
+        self.ratelimit = 0.1
+        self.api_key = api_key
         self.lastcall = datetime.datetime.now()
 
-    def decode(self, pluscode: str):
+    def getCities(self):
+        return self.cities
+
+    def decode(self, pluscode):
         match = re.match('^(\S*\+\S{2})\s*(.*?)$', pluscode)
         fullcode = None
         if match is not None:
@@ -41,10 +40,8 @@ class Converter:
             time.sleep(time_diff if time_diff > 0 else 0)
             city = self.getNewData(place)
             if city is False: return False
-            print(f'getting for {place}')
+            print(f'fetching coordinates for {place}')
             self.cities = self.cities + [city]
-            with open(self.filename, 'w', encoding='utf-8') as file:
-                json.dump(self.cities, file)
         else:
             city = city.pop()
         city_prefix = olc.encode(city['latitude'], city['longitude'])[0:4]
@@ -52,10 +49,10 @@ class Converter:
 
     def getNewData(self, place):
         if place == "": return False
-        city = requests.get('https://nominatim.openstreetmap.org/search', params={
-                'q': place,
-                'format': 'json'
+        city = requests.get('https://maps.googleapis.com/maps/api/geocode/json', params={
+                'key': self.api_key,
+                'address': place
             })
         self.lastcall = datetime.datetime.now()
-        city = city.json().pop(0)
-        return {'name': place, 'latitude': float(city['lat']), 'longitude': float(city['lon'])}
+        city = city.json()['results'].pop(0)
+        return {'name': place, 'latitude': float(city['geometry']['location']['lat']), 'longitude': float(city['geometry']['location']['lng'])}

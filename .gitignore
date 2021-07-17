@@ -1,8 +1,8 @@
 main.py
-src/pluscodepy/__pycache__
+src/gpluscodepy/__pycache__
 cities.json
 pyproject.toml
 setup.cfg
 dist
-src/pluscodepy.egg-info
+src/gpluscodepy.egg-info
 tests/
